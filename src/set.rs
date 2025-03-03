@@ -69,6 +69,23 @@ where
     }
 }
 
+impl<T, S> FromIterator<T> for IndexSet<T, S>
+where
+    S: Clone + Default + BuildHasher,
+    T: Clone + Hash + Eq,
+{
+    fn from_iter<I>(iter: I) -> Self
+    where
+        I: IntoIterator<Item = T>,
+    {
+        let mut set = Self::new();
+        for item in iter {
+            set = set.insert(item);
+        }
+        set
+    }
+}
+
 impl<T, S> IndexSet<T, S>
 where
     T: Hash + Eq,
@@ -84,7 +101,7 @@ where
     T: Clone + Hash + Eq,
     S: Clone + BuildHasher,
 {
-    pub fn update(&self, item: T) -> Self {
+    pub fn insert(&self, item: T) -> Self {
         Self {
             map: self.map.update(item, ()),
         }
@@ -145,7 +162,7 @@ mod tests {
     #[test]
     fn update_empty_set() {
         let set: IndexSet<i32> = IndexSet::new();
-        let updated = set.update(1);
+        let updated = set.insert(1);
 
         assert!(updated.contains(&1));
         assert!(!set.contains(&1)); // Original set remains unchanged
@@ -154,8 +171,8 @@ mod tests {
     #[test]
     fn update_existing_item() {
         let set: IndexSet<i32> = IndexSet::new();
-        let set = set.update(1);
-        let updated = set.update(1);
+        let set = set.insert(1);
+        let updated = set.insert(1);
 
         assert!(updated.contains(&1));
         assert!(set.contains(&1));
@@ -167,7 +184,7 @@ mod tests {
     #[test]
     fn multiple_updates() {
         let set: IndexSet<i32> = IndexSet::new();
-        let set = set.update(1).update(2).update(3);
+        let set = set.insert(1).insert(2).insert(3);
 
         assert!(set.contains(&1));
         assert!(set.contains(&2));
@@ -178,7 +195,7 @@ mod tests {
     #[test]
     fn iter_order() {
         let set: IndexSet<i32> = IndexSet::new();
-        let set = set.update(1).update(2).update(3);
+        let set = set.insert(1).insert(2).insert(3);
 
         let items: Vec<_> = set.iter().collect();
         assert_eq!(items.len(), 3);
@@ -192,7 +209,7 @@ mod tests {
     #[test]
     fn with_strings() {
         let set: IndexSet<String> = IndexSet::new();
-        let set = set.update("one".to_string()).update("two".to_string());
+        let set = set.insert("one".to_string()).insert("two".to_string());
 
         assert!(set.contains(&"one".to_string()));
         assert!(set.contains(&"two".to_string()));
@@ -202,8 +219,8 @@ mod tests {
     #[test]
     fn update_preserves_existing_items() {
         let set: IndexSet<i32> = IndexSet::new();
-        let set = set.update(1).update(2);
-        let updated = set.update(3);
+        let set = set.insert(1).insert(2);
+        let updated = set.insert(3);
 
         assert!(updated.contains(&1));
         assert!(updated.contains(&2));
@@ -223,7 +240,7 @@ mod tests {
             id: 1,
             name: "test".to_string(),
         };
-        let set = set.update(item.clone());
+        let set = set.insert(item.clone());
 
         assert!(set.contains(&item));
     }
@@ -234,7 +251,7 @@ mod tests {
         struct Empty;
 
         let set: IndexSet<Empty> = IndexSet::new();
-        let set = set.update(Empty);
+        let set = set.insert(Empty);
 
         assert!(set.contains(&Empty));
     }
@@ -242,7 +259,7 @@ mod tests {
     #[test]
     fn update_maintains_uniqueness() {
         let set: IndexSet<i32> = IndexSet::new();
-        let set = set.update(1).update(1).update(1);
+        let set = set.insert(1).insert(1).insert(1);
 
         assert!(set.contains(&1));
         assert_eq!(set.iter().count(), 1);
@@ -253,7 +270,7 @@ mod tests {
         let set: IndexSet<i32> = IndexSet::new();
         let mut set = set;
         for i in 0..1000 {
-            set = set.update(i);
+            set = set.insert(i);
         }
 
         assert_eq!(set.iter().count(), 1000);
