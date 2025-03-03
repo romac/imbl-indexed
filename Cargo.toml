@@ -7,6 +7,7 @@ edition = "2021"
 all-features = true
 
 [features]
+default = []
 arbitrary = ["dep:arbitrary", "imbl/arbitrary"]
 debug = ["imbl/debug"]
 proptest = ["dep:proptest", "imbl/proptest"]

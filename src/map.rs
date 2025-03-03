@@ -1,6 +1,8 @@
 use core::fmt;
 use std::hash::{BuildHasher, Hash, Hasher, RandomState};
 
+use imbl::shared_ptr::RcK;
+
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct HashValue(usize);
 
@@ -24,11 +26,11 @@ struct Bucket<K, V> {
     value: V,
 }
 
-type Indices = imbl::HashMap<HashValue, usize>;
-type Entries<K, V> = imbl::Vector<Option<Bucket<K, V>>>;
+type Indices<S> = imbl::GenericHashMap<HashValue, usize, S, RcK>;
+type Entries<K, V> = imbl::GenericVector<Option<Bucket<K, V>>, RcK>;
 
 pub struct IndexMap<K, V, S = RandomState> {
-    indices: Indices,
+    indices: Indices<S>,
     entries: Entries<K, V>,
     hash_builder: S,
 }
@@ -40,6 +42,37 @@ where
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_map().entries(self.iter()).finish()
+    }
+}
+
+impl<K, V, S> IntoIterator for IndexMap<K, V, S>
+where
+    K: Clone,
+    V: Clone,
+{
+    type Item = (K, V);
+    type IntoIter = IntoIter<K, V>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        IntoIter {
+            entries: self.entries.into_iter(),
+        }
+    }
+}
+
+pub struct IntoIter<K, V> {
+    entries: imbl::vector::ConsumingIter<Option<Bucket<K, V>>, RcK>,
+}
+
+impl<K, V> Iterator for IntoIter<K, V>
+where
+    K: Clone,
+    V: Clone,
+{
+    type Item = (K, V);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.entries.next().flatten().map(|b| (b.key, b.value))
     }
 }
 
@@ -59,9 +92,12 @@ impl<K, V> Default for IndexMap<K, V> {
 
 impl<K, V, S> IndexMap<K, V, S> {
     #[inline]
-    pub fn with_hasher(hash_builder: S) -> Self {
+    pub fn with_hasher(hash_builder: S) -> Self
+    where
+        S: Clone,
+    {
         Self {
-            indices: Indices::new(),
+            indices: Indices::with_hasher(hash_builder.clone()),
             entries: Entries::new(),
             hash_builder,
         }

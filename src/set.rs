@@ -32,7 +32,10 @@ impl<T> Default for IndexSet<T> {
 
 impl<T, S> IndexSet<T, S> {
     #[inline]
-    pub fn with_hasher(hash_builder: S) -> Self {
+    pub fn with_hasher(hash_builder: S) -> Self
+    where
+        S: Clone,
+    {
         Self {
             map: IndexMap::with_hasher(hash_builder),
         }
@@ -85,6 +88,35 @@ where
         Self {
             map: self.map.without(item),
         }
+    }
+}
+
+impl<T, S> IntoIterator for IndexSet<T, S>
+where
+    T: Clone,
+{
+    type Item = T;
+    type IntoIter = IntoIter<T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        IntoIter {
+            inner: self.map.into_iter(),
+        }
+    }
+}
+
+pub struct IntoIter<T> {
+    inner: crate::map::IntoIter<T, ()>,
+}
+
+impl<T> Iterator for IntoIter<T>
+where
+    T: Clone,
+{
+    type Item = T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.inner.next().map(|(k, _)| k)
     }
 }
 
