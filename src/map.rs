@@ -76,17 +76,23 @@ where
     }
 }
 
-impl<K, V> IndexMap<K, V> {
+impl<K, V, S> IndexMap<K, V, S>
+where
+    S: Clone + Default,
+{
     #[inline]
     pub fn new() -> Self {
-        Self::with_hasher(<_>::default())
+        Self::with_hasher(S::default())
     }
 }
 
-impl<K, V> Default for IndexMap<K, V> {
+impl<K, V, S> Default for IndexMap<K, V, S>
+where
+    S: Clone + Default,
+{
     #[inline]
     fn default() -> Self {
-        Self::new()
+        Self::with_hasher(S::default())
     }
 }
 
@@ -228,6 +234,8 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    type IndexMap<K, V> = super::IndexMap<K, V, RandomState>;
 
     #[test]
     fn new_map_is_empty() {

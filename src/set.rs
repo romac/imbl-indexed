@@ -16,17 +16,23 @@ where
     }
 }
 
-impl<T> IndexSet<T> {
+impl<T, S> IndexSet<T, S>
+where
+    S: Clone + Default,
+{
     #[inline]
     pub fn new() -> Self {
-        Self::with_hasher(<_>::default())
+        Self::with_hasher(S::default())
     }
 }
 
-impl<T> Default for IndexSet<T> {
+impl<T, S> Default for IndexSet<T, S>
+where
+    S: Clone + Default,
+{
     #[inline]
     fn default() -> Self {
-        Self::new()
+        Self::with_hasher(S::default())
     }
 }
 
