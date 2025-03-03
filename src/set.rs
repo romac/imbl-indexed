@@ -24,6 +24,12 @@ where
     pub fn new() -> Self {
         Self::with_hasher(S::default())
     }
+
+    pub fn new_from(&self) -> Self {
+        Self {
+            map: self.map.new_from(),
+        }
+    }
 }
 
 impl<T, S> Default for IndexSet<T, S>
@@ -140,6 +146,53 @@ where
         Self {
             map: self.map.without(item),
         }
+    }
+
+    pub fn remove(&mut self, item: &T) {
+        self.map.remove(item);
+    }
+
+    pub fn is_subset(&self, other: &Self) -> bool {
+        self.iter().all(|item| other.contains(item))
+    }
+
+    pub fn union(self, other: Self) -> Self
+    where
+        S: Default,
+    {
+        let (mut out, from) = if self.len() >= other.len() {
+            (self, other)
+        } else {
+            (other, self)
+        };
+
+        for value in from {
+            out.insert(value);
+        }
+        out
+    }
+
+    pub fn intersection(self, other: Self) -> Self
+    where
+        S: Default,
+    {
+        let mut out = self.new_from();
+        for elem in other {
+            if self.contains(&elem) {
+                out.insert(elem);
+            }
+        }
+        out
+    }
+
+    pub fn relative_complement(mut self, other: Self) -> Self
+    where
+        S: Default,
+    {
+        for value in other {
+            self.remove(&value);
+        }
+        self
     }
 }
 

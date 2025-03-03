@@ -121,6 +121,14 @@ where
     pub fn new() -> Self {
         Self::with_hasher(S::default())
     }
+
+    pub fn new_from(&self) -> Self {
+        Self {
+            indices: Indices::new(),
+            entries: Entries::new(),
+            hash_builder: self.hash_builder.clone(),
+        }
+    }
 }
 
 impl<K, V, S> Default for IndexMap<K, V, S>
@@ -277,6 +285,15 @@ where
             }
         } else {
             self.clone()
+        }
+    }
+
+    pub fn remove(&mut self, key: &K) {
+        let hash = self.hash(key);
+
+        if let Some(idx) = self.indices.get(&hash).copied() {
+            self.indices.remove(&hash);
+            self.entries.remove(idx);
         }
     }
 }
