@@ -45,6 +45,25 @@ where
     }
 }
 
+impl<K, V, S> PartialEq for IndexMap<K, V, S>
+where
+    K: Hash + Eq,
+    V: PartialEq,
+    S: BuildHasher,
+{
+    fn eq(&self, other: &Self) -> bool {
+        self.len() == other.len() && self.iter().all(|(k, v)| other.get(k) == Some(v))
+    }
+}
+
+impl<K, V, S> Eq for IndexMap<K, V, S>
+where
+    K: Hash + Eq,
+    V: PartialEq,
+    S: BuildHasher,
+{
+}
+
 impl<K, V, S> IntoIterator for IndexMap<K, V, S>
 where
     K: Clone,

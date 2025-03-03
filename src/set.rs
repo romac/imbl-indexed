@@ -69,6 +69,23 @@ where
     }
 }
 
+impl<T, S> PartialEq for IndexSet<T, S>
+where
+    T: Hash + Eq,
+    S: BuildHasher,
+{
+    fn eq(&self, other: &Self) -> bool {
+        self.map == other.map
+    }
+}
+
+impl<T, S> Eq for IndexSet<T, S>
+where
+    T: Hash + Eq,
+    S: BuildHasher,
+{
+}
+
 impl<T, S> FromIterator<T> for IndexSet<T, S>
 where
     S: Clone + Default + BuildHasher,
@@ -94,6 +111,14 @@ where
     pub fn contains(&self, item: &T) -> bool {
         self.map.contains_key(item)
     }
+
+    pub fn len(&self) -> usize {
+        self.map.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.map.is_empty()
+    }
 }
 
 impl<T, S> IndexSet<T, S>
@@ -111,6 +136,17 @@ where
         Self {
             map: self.map.without(item),
         }
+    }
+}
+
+impl<'a, T, S> Iterator for &'a IndexSet<T, S>
+where
+    T: Clone,
+{
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter().next()
     }
 }
 
