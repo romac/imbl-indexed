@@ -64,6 +64,24 @@ where
 {
 }
 
+impl<K, V, S> FromIterator<(K, V)> for IndexMap<K, V, S>
+where
+    S: Clone + Default + BuildHasher,
+    K: Clone + Hash + Eq,
+    V: Clone,
+{
+    fn from_iter<I>(iter: I) -> Self
+    where
+        I: IntoIterator<Item = (K, V)>,
+    {
+        let mut set = Self::new();
+        for (key, value) in iter {
+            set.insert(key, value);
+        }
+        set
+    }
+}
+
 impl<K, V, S> IntoIterator for IndexMap<K, V, S>
 where
     K: Clone,
@@ -207,6 +225,19 @@ where
     V: Clone,
     S: Clone + BuildHasher,
 {
+    pub fn insert(&mut self, key: K, value: V) {
+        let hash = self.hash(&key);
+        let bucket = Bucket { key, value };
+
+        if let Some(idx) = self.indices.get(&hash) {
+            self.entries.get_mut(*idx).unwrap().replace(bucket);
+        } else {
+            let idx = self.entries.len();
+            self.indices.insert(hash, idx);
+            self.entries.push_back(Some(bucket));
+        }
+    }
+
     pub fn update(&self, key: K, value: V) -> Self {
         let hash = self.hash(&key);
         let bucket = Some(Bucket { key, value });
@@ -293,6 +324,35 @@ mod tests {
         let map = map.update(1, "one".to_string());
         let map = map.update(2, "two".to_string());
         let map = map.update(3, "three".to_string());
+
+        assert_eq!(map.get(&1), Some(&"one".to_string()));
+        assert_eq!(map.get(&2), Some(&"two".to_string()));
+        assert_eq!(map.get(&3), Some(&"three".to_string()));
+    }
+
+    #[test]
+    fn insert_empty_map() {
+        let mut map: IndexMap<i32, String> = IndexMap::new();
+        map.insert(1, "one".to_string());
+
+        assert_eq!(map.get(&1), Some(&"one".to_string()));
+    }
+
+    #[test]
+    fn insert_existing_key() {
+        let mut map: IndexMap<i32, String> = IndexMap::new();
+        map.insert(1, "one".to_string());
+        map.insert(1, "new one".to_string());
+
+        assert_eq!(map.get(&1), Some(&"new one".to_string()));
+    }
+
+    #[test]
+    fn multiple_inserts() {
+        let mut map: IndexMap<i32, String> = IndexMap::new();
+        map.insert(1, "one".to_string());
+        map.insert(2, "two".to_string());
+        map.insert(3, "three".to_string());
 
         assert_eq!(map.get(&1), Some(&"one".to_string()));
         assert_eq!(map.get(&2), Some(&"two".to_string()));
